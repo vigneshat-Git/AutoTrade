@@ -1,0 +1,1 @@
+Auto Trade is a platform which gives you live signals using different indicators with market datasets and give users market report regularly before market opens.
