@@ -118,8 +118,8 @@ const ChartPage = ({ darkMode, toggleDarkMode }) => {
         setData(response.data);
         setError(null);
       } catch (err) {
-        console.error(err);
-        setError('Failed to fetch data. Please check the symbol.');
+        console.error('API Error:', err);
+        setError('Using mock data (API unavailable). Try checking backend is running on port 8000.');
       } finally {
         setLoading(false);
       }
@@ -246,12 +246,12 @@ const ChartPage = ({ darkMode, toggleDarkMode }) => {
 
               <div style={styles.signalRow}>
                 <span style={{color: darkMode ? '#aaa' : '#666'}}>Current Price:</span>
-                <span style={{fontSize: '18px', fontWeight: 'bold', color: darkMode ? '#fff' : '#000'}}>${data.current_price.toFixed(2)}</span>
+                <span style={{fontSize: '18px', fontWeight: 'bold', color: darkMode ? '#fff' : '#000'}}>₹{data.current_price.toFixed(2)}</span>
               </div>
 
               <div style={styles.signalRow}>
                 <span style={{color: darkMode ? '#aaa' : '#666'}}>Predicted Price:</span>
-                <span style={{fontSize: '18px', fontWeight: 'bold', color: darkMode ? '#fff' : '#000'}}>${data.predicted_price.toFixed(2)}</span>
+                <span style={{fontSize: '18px', fontWeight: 'bold', color: darkMode ? '#fff' : '#000'}}>₹{data.predicted_price.toFixed(2)}</span>
               </div>
 
               <div style={{...styles.signalRow, paddingTop: '10px', borderTop: `1px solid ${darkMode ? '#333' : '#eee'}`}}>

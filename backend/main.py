@@ -3,9 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 import yfinance as yf
 import numpy as np
 import pandas as pd
+import requests
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense
+from tensorflow.keras.layers import LSTM, Dense, Input
 import random
 from datetime import datetime, timedelta
 
@@ -14,29 +15,77 @@ LOOKBACK = 60
 CONFIDENCE_LIMIT = 90
 MIN_MOVE_PCT = 0.30
 
-# UPDATED: Cache for 1 Hour (3600 Seconds)
-DATA_CACHE = {} 
-CACHE_DURATION_SECONDS = 3600 
+# Cache duration
+DATA_CACHE = {}
+CACHE_DURATION_SECONDS = 3600
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"], # Allow all for testing
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# ================= ROBUST DATA FETCHER (THE FIX) =================
+
+# ================= ROBUST DATA FETCHER (CORRECTED) =================
+
+def fetch_robust_data(symbol):
+    """
+    Fetches data using yfinance's internal handling (curl_cffi).
+    Automatically adds .NS if missing for Indian context.
+    """
+    # 1. Auto-append .NS for Indian stocks if missing
+    # (Yahoo Finance requires .NS for NSE stocks)
+    if not symbol.endswith(".NS") and not symbol.endswith(".BO"):
+        symbol = f"{symbol}.NS"
+
+    print(f"🌍 Attempting to fetch: {symbol}")
+
+    try:
+        # 2. Use Ticker directly WITHOUT a custom session
+        # The error explicitly said: "let YF handle"
+        ticker = yf.Ticker(symbol)
+        
+        # Fetch 5 days of 1-minute data
+        df = ticker.history(period="5d", interval="1m")
+
+        if df is None or df.empty:
+            print(f"❌ {symbol}: No data found (DataFrame empty).")
+            return None, symbol
+
+        # Reset index to make sure we have access to columns
+        df.reset_index(inplace=True)
+        
+        # Standardize columns (Capitalize first letter)
+        df.columns = [c.capitalize() for c in df.columns] 
+        
+        required_cols = ['Open', 'High', 'Low', 'Close']
+        
+        # Check if we have the data we need
+        if not all(col in df.columns for col in required_cols):
+            print(f"❌ {symbol}: Missing columns. Got: {df.columns}")
+            return None, symbol
+
+        return df, symbol
+
+    except Exception as e:
+        print(f"❌ API CRASH ({symbol}): {str(e)}")
+        return None, symbol
+    
 # ================= HELPER FUNCTIONS =================
 
 def generate_mock_data(symbol):
+    # (Same as your previous code - kept for fallback)
     dates = [datetime.now() - timedelta(minutes=i) for i in range(1000)]
     dates.reverse()
     ohlc_data = []
     current_price = 150.0
     for _ in dates:
-        move = random.uniform(-0.5, 0.5) 
+        move = random.uniform(-0.5, 0.5)
         open_p = current_price
         close_p = open_p + move
         wiggle_room = random.uniform(0.05, 0.3)
@@ -68,10 +117,11 @@ def prepare_data(data):
 
 def build_model(shape):
     model = Sequential([
-        LSTM(50, return_sequences=True, input_shape=shape),
+        Input(shape=shape), # Add this explicitly as the first layer
+        LSTM(50, return_sequences=True), # Remove input_shape from here
         LSTM(50),
         Dense(1)
-    ])
+])
     model.compile(optimizer="adam", loss="mse")
     return model
 
@@ -86,55 +136,49 @@ async def get_prediction(symbol: str):
     data_source = "LIVE"
     error_reason = ""
     
-    # Track when the data was actually fetched
-    data_timestamp = datetime.now()
-
     # 1. CHECK CACHE
     now = datetime.now()
-    if symbol in DATA_CACHE:
-        cached_df, timestamp = DATA_CACHE[symbol]
+    # Handle the .NS check for cache keys too
+    cache_key = symbol if symbol.endswith(".NS") else f"{symbol}.NS"
+
+    if cache_key in DATA_CACHE:
+        cached_df, timestamp = DATA_CACHE[cache_key]
         if (now - timestamp).total_seconds() < CACHE_DURATION_SECONDS:
-            print(f"✅ CACHE HIT: {symbol} (Last fetch: {timestamp.strftime('%H:%M:%S')})")
+            print(f"✅ CACHE HIT: {cache_key}")
             df = cached_df
             data_source = "CACHE"
-            data_timestamp = timestamp
+            symbol = cache_key # Ensure we use the correct .NS symbol
 
-    # 2. FETCH REAL DATA
+    # 2. FETCH REAL DATA (If not in cache)
     if df is None:
-        try:
-            print(f"🌍 FETCHING NEW DATA: {symbol}...")
-            # We still fetch 5 days to ensure the model has enough history to learn patterns
-            fetched_df = yf.download(symbol, period="5d", interval="1m", progress=False)
-            
-            if fetched_df is not None and not fetched_df.empty:
-                if isinstance(fetched_df.columns, pd.MultiIndex):
-                    fetched_df.columns = fetched_df.columns.get_level_values(0)
-                
-                required_cols = ['Open', 'High', 'Low', 'Close']
-                if all(col in fetched_df.columns for col in required_cols):
-                    df = fetched_df
-                    DATA_CACHE[symbol] = (df, now)
-                    data_timestamp = now
-                else:
-                    raise Exception("Missing Columns")
-            else:
-                raise Exception("Symbol Not Found")
-                
-        except Exception as e:
-            print(f"❌ FETCH ERROR: {e}")
+        fetched_df, correct_symbol = fetch_robust_data(symbol)
+        
+        if fetched_df is not None:
+            df = fetched_df
+            symbol = correct_symbol # Update symbol to the one that worked (e.g. INFY -> INFY.NS)
+            DATA_CACHE[symbol] = (df, now)
+            print(f"✅ REAL DATA LOADED: {symbol}")
+        else:
+            print(f"⚠️ Failed to fetch {symbol}, switching to MOCK.")
             df = generate_mock_data(symbol)
             data_source = "MOCK"
-            error_reason = str(e)
-
-    # 3. FALLBACK
-    if df is None or df.empty:
-        df = generate_mock_data(symbol)
-        data_source = "MOCK"
+            error_reason = "Download failed or empty data"
 
     # --- PROCESS ---
+    # Ensure Datetime is index for consistency
+    if 'Datetime' in df.columns:
+        df['Datetime'] = pd.to_datetime(df['Datetime'])
+        if df['Datetime'].dt.tz is not None:
+             df['Datetime'] = df['Datetime'].dt.tz_localize(None) # Remove TZ for cleaner JSON
+        df.set_index('Datetime', inplace=True)
+    elif 'Date' in df.columns:
+         df['Date'] = pd.to_datetime(df['Date'])
+         df.set_index('Date', inplace=True)
+
     df = calculate_indicators(df)
     close_data = df[['Close']].values
     
+    # Validation
     if len(close_data) < LOOKBACK + 1:
          df = generate_mock_data(symbol)
          df = calculate_indicators(df)
@@ -143,6 +187,7 @@ async def get_prediction(symbol: str):
 
     X, y, scaler = prepare_data(close_data)
     
+    # Quick training (1 epoch for speed)
     model = build_model((X.shape[1], 1))
     model.fit(X, y, epochs=1, batch_size=32, verbose=0) 
 
@@ -166,42 +211,19 @@ async def get_prediction(symbol: str):
 
     # Prepare Chart Data
     history_subset = df.tail(100).reset_index()
-    
-    # Standardize column name
-    if 'Date' in history_subset.columns:
-        history_subset = history_subset.rename(columns={'Date': 'Datetime'})
-    elif 'index' in history_subset.columns:
-        history_subset = history_subset.rename(columns={'index': 'Datetime'})
-
     chart_data = []
+    
     for _, row in history_subset.iterrows():
-        # Get the timestamp
-        ts = row.get('Datetime', row.name)
-        
-        # Ensure it's a pandas Timestamp object
-        if isinstance(ts, str):
-            ts = pd.to_datetime(ts)
-        
-        # --- THE FIX: Convert to Local System Time ---
-        # If the timestamp has timezone info (like UTC), convert it to your local time.
-        if ts.tzinfo is not None:
-            ts = ts.astimezone() 
-            # .astimezone() with no arguments converts to the system's local timezone
-            
-        # Remove timezone info after conversion so it's just a "naive" local time string
-        ts = ts.tz_localize(None)
-
-        # Format as string
-        ts_str = ts.strftime('%Y-%m-%d %H:%M:%S')
+        # Get timestamp from the index name we set earlier
+        ts_val = row['Datetime'] if 'Datetime' in row else row.name
+        if isinstance(ts_val, pd.Timestamp):
+            ts_str = ts_val.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            ts_str = str(ts_val)
 
         chart_data.append({
             "x": ts_str,
-            "y": [
-                float(row['Open']), 
-                float(row['High']), 
-                float(row['Low']), 
-                float(row['Close'])
-            ]
+            "y": [float(row['Open']), float(row['High']), float(row['Low']), float(row['Close'])]
         })
 
     return {
@@ -213,38 +235,7 @@ async def get_prediction(symbol: str):
         "move_pct": move_pct,
         "status_message": status_msg,
         "chart_data": chart_data,
-        "last_updated": str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    }
-
-# ================= HEALTH CHECK ENDPOINT =================
-@app.get("/api/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "timestamp": str(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-        "cache_size": len(DATA_CACHE)
-    }
-
-# ================= PORTFOLIO ENDPOINT =================
-@app.post("/api/portfolio/batch")
-async def get_portfolio_batch(symbols: list):
-    """
-    Fetch prediction data for multiple symbols at once
-    """
-    results = []
-    for symbol in symbols:
-        try:
-            # Reuse the existing prediction logic
-            response = await get_prediction(symbol)
-            results.append(response)
-        except Exception as e:
-            print(f"Error fetching {symbol}: {e}")
-            continue
-    
-    return {
-        "portfolio": results,
-        "total_stocks": len(results),
-        "timestamp": str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        "data_source": data_source
     }
 
 if __name__ == "__main__":
