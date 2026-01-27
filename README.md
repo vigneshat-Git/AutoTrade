@@ -42,7 +42,7 @@ cd backend
 pip install -r requirements.txt
 python main.py
 ```
-Backend runs on `http://13.60.78.170:8000`
+Backend runs on `https://b47bd3a9224e.ngrok-free.app`
 
 **2. Frontend Setup**
 ```bash
