@@ -53,3 +53,14 @@ npm start
 Frontend runs on `http://localhost:3000`
 
 ### Screenshot
+**1.Dashboard of the page looks like this**
+<img width="1366" height="768" alt="Screenshot 2026-01-27 234832" src="https://github.com/user-attachments/assets/5ca30f36-8c28-446f-b427-78c234a52c59" />
+
+**2.Top 50 stocks list**
+<img width="1323" height="424" alt="top50" src="https://github.com/user-attachments/assets/ce450b50-21e4-4c30-bf64-4c0c77a38eb8" />
+
+**3.Portfolio Page**
+<img width="1366" height="768" alt="portfolio" src="https://github.com/user-attachments/assets/9f173df2-cefb-4f9f-b102-f4d20ead476f" />
+
+**4.Charts page**
+<img width="1366" height="768" alt="charts" src="https://github.com/user-attachments/assets/ee70c398-e925-4d03-8555-696e7b1283ea" />
