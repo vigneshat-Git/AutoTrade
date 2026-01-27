@@ -4,6 +4,245 @@ import axios from 'axios';
 import Chart from 'react-apexcharts';
 import './App.css';
 
+// ================== MOCK DATA GENERATOR ==================
+const generateMarketData = (count = 50) => {
+  const exchanges = ['NSE', 'BSE'];
+  const symbols = ['TCS', 'INFY', 'WIPRO', 'HCL', 'MINDTREE', 'RELIANCE', 'HDFC', 'ICICIBANK', 'AXISBANK', 'MARUTI', 'BAJAJFINSV', 'SUNPHARMA', 'DMART', 'NESTLEIND', 'LTTS'];
+  const data = [];
+  
+  for (let i = 0; i < count; i++) {
+    const open = Math.random() * 5000 + 100;
+    const chng = (Math.random() - 0.48) * 10;
+    const ltp = open * (1 + chng / 100);
+    
+    data.push({
+      symbol: symbols[i % symbols.length] + (i > symbols.length ? i : ''),
+      open: open.toFixed(2),
+      high: (open * 1.05).toFixed(2),
+      low: (open * 0.95).toFixed(2),
+      prevClose: (open * (1 - chng / 100)).toFixed(2),
+      ltp: ltp.toFixed(2),
+      chng: chng.toFixed(2),
+      volume: Math.floor(Math.random() * 100000000),
+      value: (ltp * Math.random() * 100000000).toFixed(0),
+      ca: (Math.random() * 100).toFixed(2),
+      exchange: exchanges[Math.floor(Math.random() * 2)]
+    });
+  }
+  
+  return data;
+};
+
+const getTopGainersLosers = (data, type, period) => {
+  let filtered = [...data];
+  if (type === 'gainers') {
+    filtered.sort((a, b) => parseFloat(b.chng) - parseFloat(a.chng));
+  } else {
+    filtered.sort((a, b) => parseFloat(a.chng) - parseFloat(b.chng));
+  }
+  return filtered.slice(0, 5);
+};
+
+// ================== DASHBOARD PAGE ==================
+const DashboardPage = ({ darkMode, toggleDarkMode }) => {
+  const [marketData] = useState(generateMarketData(50));
+  const [timePeriod, setTimePeriod] = useState('Day');
+  const [exchange, setExchange] = useState('All');
+  const [sortBy, setSortBy] = useState('chng');
+  const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
+
+  let filteredData = marketData.filter(d => exchange === 'All' || d.exchange === exchange);
+  filteredData = filteredData.filter(d => d.symbol.toLowerCase().includes(searchTerm.toLowerCase()));
+  const topGainers = getTopGainersLosers(filteredData, 'gainers', timePeriod);
+  const topLosers = getTopGainersLosers(filteredData, 'losers', timePeriod);
+  const suggestions = filteredData.filter(d => parseFloat(d.chng) > 2).sort((a, b) => parseFloat(b.chng) - parseFloat(a.chng)).slice(0, 5);
+
+  return (
+    <div style={{...styles.consoleContainer, background: darkMode ? '#0a0e27' : '#f0f4f9', overflow: 'hidden', display: 'flex', flexDirection: 'column'}}>
+      <div style={styles.consoleHeader}>
+        <div style={{fontSize: '24px', fontWeight: 'bold', color: darkMode ? '#00ff88' : '#667eea', textShadow: darkMode ? '0 0 10px #00ff88' : 'none'}}>
+          ⚡ AUTOTRADE 
+        </div>
+        <button onClick={toggleDarkMode} style={{...styles.themeBtnConsole, background: darkMode ? '#1a1a3e' : '#fff'}}>
+          {darkMode ? '☀' : '☽'}
+        </button>
+      </div>
+
+      {/* Navigation */}
+      <div style={styles.consoleNav}>
+        <button onClick={() => navigate('/chart/INFY')} style={styles.navBtn}>→ CHART VIEW</button>
+        <button onClick={() => navigate('/portfolio')} style={styles.navBtn}>→ PORTFOLIO</button>
+      </div>
+
+      {/* Search Bar */}
+      <div style={{padding: '15px', borderBottom: `1px solid ${darkMode ? '#2a2a4e' : '#ddd'}`, background: darkMode ? '#1a1a3e' : '#fff'}}>
+        <input
+          type="text"
+          placeholder="🔍 Search stocks..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '12px 15px',
+            borderRadius: '8px',
+            border: `1px solid ${darkMode ? '#00ff88' : '#667eea'}`,
+            background: darkMode ? '#0a0e27' : '#f9f9f9',
+            color: darkMode ? '#00ff88' : '#000',
+            fontSize: '14px',
+            boxShadow: `0 0 10px ${darkMode ? 'rgba(0,255,136,0.3)' : 'rgba(102,126,234,0.1)'}`,
+            outline: 'none'
+          }}
+        />
+      </div>
+
+      {/* Filters */}
+      <div style={styles.filterBar}>
+        <div style={styles.filterGroup}>
+          <label style={{color: darkMode ? '#00ff88' : '#667eea', fontWeight: 'bold'}}>PERIOD:</label>
+          {['Day', 'Week', 'Month', 'Year'].map(p => (
+            <button
+              key={p}
+              onClick={() => setTimePeriod(p)}
+              style={{
+                ...styles.filterBtn,
+                background: timePeriod === p ? (darkMode ? '#00ff88' : '#667eea') : (darkMode ? '#1a1a3e' : '#e8eef5'),
+                color: timePeriod === p ? (darkMode ? '#0a0e27' : '#fff') : (darkMode ? '#00ff88' : '#667eea'),
+                boxShadow: timePeriod === p ? `0 0 15px ${darkMode ? '#00ff88' : '#667eea'}` : 'none'
+              }}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+
+        <div style={styles.filterGroup}>
+          <label style={{color: darkMode ? '#00ffff' : '#667eea', fontWeight: 'bold'}}>EXCHANGE:</label>
+          {['All', 'NSE', 'BSE'].map(ex => (
+            <button
+              key={ex}
+              onClick={() => setExchange(ex)}
+              style={{
+                ...styles.filterBtn,
+                background: exchange === ex ? (darkMode ? '#00ffff' : '#667eea') : (darkMode ? '#1a1a3e' : '#e8eef5'),
+                color: exchange === ex ? (darkMode ? '#0a0e27' : '#fff') : (darkMode ? '#00ffff' : '#667eea'),
+                boxShadow: exchange === ex ? `0 0 15px ${darkMode ? '#00ffff' : '#667eea'}` : 'none'
+              }}
+            >
+              {ex}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Scrollable Content */}
+      <div style={{flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '15px'}}>
+        {/* Top Gainers & Losers */}
+        <div style={styles.gainersLosersContainer}>
+          <div style={styles.gainersBox}>
+            <div style={{...styles.sectionTitle, color: darkMode ? '#00ff88' : '#10b981', textShadow: darkMode ? '0 0 10px #00ff88' : 'none'}}>
+              🔥 TOP GAINERS
+            </div>
+            {topGainers.map((stock, idx) => (
+              <div key={idx} style={{...styles.gainerCard, borderLeft: `3px solid #10b981`}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <span style={{fontWeight: 'bold', color: darkMode ? '#fff' : '#000'}}>{stock.symbol}</span>
+                  <span style={{color: '#10b981', fontWeight: 'bold', fontSize: '16px'}}>↑ {stock.chng}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={styles.losersBox}>
+            <div style={{...styles.sectionTitle, color: darkMode ? '#ff4444' : '#ef4444', textShadow: darkMode ? '0 0 10px #ff4444' : 'none'}}>
+              ❄️ TOP LOSERS
+            </div>
+            {topLosers.map((stock, idx) => (
+              <div key={idx} style={{...styles.loserCard, borderLeft: `3px solid #ef4444`}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <span style={{fontWeight: 'bold', color: darkMode ? '#fff' : '#000'}}>{stock.symbol}</span>
+                  <span style={{color: '#ef4444', fontWeight: 'bold', fontSize: '16px'}}>↓ {stock.chng}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={styles.suggestionsBox}>
+            <div style={{...styles.sectionTitle, color: darkMode ? '#ffff00' : '#f59e0b', textShadow: darkMode ? '0 0 10px #ffff00' : 'none'}}>
+              💡 BUY SUGGESTIONS
+            </div>
+            {suggestions.map((stock, idx) => (
+              <div key={idx} style={{...styles.suggestionCard, borderLeft: `3px solid #f59e0b`, cursor: 'pointer'}} onClick={() => navigate(`/chart/${stock.symbol}`)}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <span style={{fontWeight: 'bold', color: darkMode ? '#fff' : '#000'}}>{stock.symbol}</span>
+                  <span style={{color: '#f59e0b', fontWeight: 'bold'}}>+{stock.chng}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Data Table */}
+        <div style={styles.tableContainer}>
+          <div style={{...styles.sectionTitle, color: darkMode ? '#00ffff' : '#667eea', marginBottom: '15px', textShadow: darkMode ? '0 0 10px #00ffff' : 'none'}}>
+            📊 MARKET DATA [{filteredData.length} STOCKS]
+          </div>
+          
+          <div style={styles.tableScroll}>
+            <table style={styles.dataTable}>
+              <thead>
+                <tr style={{borderBottom: `2px solid ${darkMode ? '#00ffff' : '#667eea'}`, background: darkMode ? '#1a1a3e' : '#f0f4f9'}}>
+                  <th style={styles.tableHeader}>SYMBOL</th>
+                  <th style={styles.tableHeader}>OPEN</th>
+                  <th style={styles.tableHeader}>HIGH</th>
+                  <th style={styles.tableHeader}>LOW</th>
+                  <th style={styles.tableHeader}>PREV CLOSE</th>
+                  <th style={styles.tableHeader}>LTP</th>
+                  <th style={styles.tableHeader}>%CHG</th>
+                  <th style={styles.tableHeader}>VOLUME</th>
+                  <th style={styles.tableHeader}>VALUE</th>
+                  <th style={styles.tableHeader}>CA</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredData.map((stock, idx) => (
+                  <tr
+                    key={idx}
+                    style={{
+                      ...styles.tableRow,
+                      borderBottom: `1px solid ${darkMode ? '#2a2a4e' : '#ddd'}`,
+                      background: idx % 2 === 0 ? (darkMode ? '#0f1229' : '#fafbfc') : (darkMode ? '#1a1a3e' : '#fff'),
+                      animation: `fadeIn 0.5s ease ${idx * 0.05}s both`
+                    }}
+                    onClick={() => navigate(`/chart/${stock.symbol}`)}
+                  >
+                    <td style={{...styles.tableCell, fontWeight: 'bold', color: darkMode ? '#00ffff' : '#667eea'}}>{stock.symbol}</td>
+                    <td style={styles.tableCell}>{stock.open}</td>
+                    <td style={{...styles.tableCell, color: '#10b981'}}>{stock.high}</td>
+                    <td style={{...styles.tableCell, color: '#ef4444'}}>{stock.low}</td>
+                    <td style={styles.tableCell}>{stock.prevClose}</td>
+                    <td style={{...styles.tableCell, fontWeight: 'bold'}}>{stock.ltp}</td>
+                    <td style={{
+                      ...styles.tableCell,
+                      color: parseFloat(stock.chng) > 0 ? '#10b981' : '#ef4444',
+                      fontWeight: 'bold'
+                    }}>
+                      {parseFloat(stock.chng) > 0 ? '↑' : '↓'} {stock.chng}
+                    </td>
+                    <td style={styles.tableCell}>{(stock.volume / 1000000).toFixed(2)}M</td>
+                    <td style={styles.tableCell}>{(stock.value / 1000000000).toFixed(2)}B</td>
+                    <td style={styles.tableCell}>{stock.ca}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ================== LANDING PAGE ==================
 const LandingPage = ({ darkMode, toggleDarkMode }) => {
   const [symbol, setSymbol] = useState('');
@@ -107,7 +346,11 @@ const ChartPage = ({ darkMode, toggleDarkMode }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshCountdown, setRefreshCountdown] = useState(3600);
+  const [timePeriod, setTimePeriod] = useState('1h');
   const navigate = useNavigate();
+  
+  const timePeriods = ['1m', '2m', '5m', '10m', '15m', '20m', '30m', '1h', '2h', '5h', '1d'];
+  const timePeriodLabels = ['1min', '2min', '5min', '10min', '15min', '20min', '30min', '1hr', '2hr', '5hr', '1day'];
   
   // Fetch Data
   useEffect(() => {
@@ -185,31 +428,52 @@ const ChartPage = ({ darkMode, toggleDarkMode }) => {
   return (
     <div style={{...styles.chartContainer, background: darkMode ? '#0f0f0f' : '#f8f9fa'}}>
       {/* Header */}
-      <div style={{...styles.chartHeader, borderBottom: `1px solid ${darkMode ? '#333' : '#eee'}`}}>
+      <div style={{...styles.chartHeader, borderBottom: `1px solid ${darkMode ? '#333' : '#eee'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px'}}>
         <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
-          <a href="/" style={{ textDecoration: 'none', color: darkMode ? '#667eea' : '#007bff', fontSize: '18px', fontWeight: 'bold' }}>← Home</a>
-          <h1 style={{margin: '0', color: darkMode ? '#fff' : '#000'}}>{symbol}</h1>
-          <button onClick={toggleWatchlist} style={{...styles.favBtn, background: watchlist.includes(symbol) ? '#f59e0b' : 'transparent', color: watchlist.includes(symbol) ? '#000' : (darkMode ? '#aaa' : '#666')}}>
+          <a href="/" style={{ textDecoration: 'none', color: darkMode ? '#667eea' : '#007bff', fontSize: '18px', fontWeight: 'bold', transition: 'all 0.3s ease', cursor: 'pointer' }} onMouseEnter={(e) => e.target.style.color = '#00ff88'} onMouseLeave={(e) => e.target.style.color = darkMode ? '#667eea' : '#007bff'}>← Home</a>
+          <h1 style={{margin: '0', color: darkMode ? '#fff' : '#000', fontSize: '28px'}}>{symbol}</h1>
+          <button onClick={toggleWatchlist} style={{...styles.favBtn, background: watchlist.includes(symbol) ? '#f59e0b' : 'transparent', color: watchlist.includes(symbol) ? '#000' : (darkMode ? '#aaa' : '#666'), border: `1px solid ${watchlist.includes(symbol) ? '#f59e0b' : (darkMode ? '#aaa' : '#ccc')}`, padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.3s ease'}}>
             {watchlist.includes(symbol) ? '★' : '☆'} {watchlist.includes(symbol) ? 'Remove' : 'Add'}
           </button>
         </div>
-        <div style={{display: 'flex', gap: '15px', alignItems: 'center'}}>
-          <button onClick={toggleDarkMode} style={styles.darkModeBtn}>
-            {darkMode ? '☀' : '☽'}
-          </button>
-          {data && (
-            <div style={{...styles.refreshBadge, background: darkMode ? '#1e3a8a' : '#e3f2fd', color: darkMode ? '#93c5fd' : '#0d47a1'}}>
-              ⧖ Next refresh: {formatTime(refreshCountdown)}
-            </div>
-          )}
+        <button onClick={toggleDarkMode} style={{...styles.darkModeBtn, padding: '10px 15px', fontSize: '20px', border: `1px solid ${darkMode ? '#00ffff' : '#ddd'}`, borderRadius: '8px', background: darkMode ? '#1a1a3e' : '#fff', cursor: 'pointer', transition: 'all 0.3s ease'}}>
+          {darkMode ? '☀' : '☽'}
+        </button>
+      </div>
+
+      {/* Time Period Selector */}
+      <div style={{padding: '12px 20px', borderBottom: `1px solid ${darkMode ? '#2a2a4e' : '#ddd'}`, background: darkMode ? '#1a1a3e' : '#fff', overflowX: 'auto'}}>
+        <div style={{display: 'flex', gap: '8px', alignItems: 'center', minWidth: 'min-content'}}>
+          <label style={{color: darkMode ? '#00ff88' : '#667eea', fontWeight: 'bold', whiteSpace: 'nowrap'}}>INTERVAL:</label>
+          {timePeriods.map((period, idx) => (
+            <button
+              key={period}
+              onClick={() => setTimePeriod(period)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: timePeriod === period ? `2px solid ${darkMode ? '#00ff88' : '#667eea'}` : `1px solid ${darkMode ? '#2a2a4e' : '#ddd'}`,
+                background: timePeriod === period ? (darkMode ? '#1a1a3e' : '#e3f2fd') : 'transparent',
+                color: timePeriod === period ? (darkMode ? '#00ff88' : '#667eea') : (darkMode ? '#aaa' : '#666'),
+                fontSize: '12px',
+                fontWeight: timePeriod === period ? 'bold' : 'normal',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s ease',
+                boxShadow: timePeriod === period ? `0 0 10px ${darkMode ? 'rgba(0,255,136,0.3)' : 'rgba(102,126,234,0.2)'}` : 'none'
+              }}
+            >
+              {timePeriodLabels[idx]}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div style={{display: 'flex', gap: '20px', padding: '20px', flex: 1}}>
+      <div style={{display: 'flex', gap: '20px', padding: '20px', flex: 1, flexDirection: window.innerWidth < 1024 ? 'column' : 'row', minHeight: '0'}}>
         
         {/* Chart Area */}
-        <div style={{flex: 3, display: 'flex', flexDirection: 'column'}}>
-          <div style={{...styles.chartBox, background: darkMode ? '#1e1e1e' : 'white', borderColor: darkMode ? '#333' : '#ddd'}}>
+        <div style={{flex: window.innerWidth < 1024 ? '1' : '3', display: 'flex', flexDirection: 'column', minHeight: window.innerWidth < 1024 ? '400px' : '0', minWidth: '0'}}>
+          <div style={{...styles.chartBox, background: darkMode ? '#1e1e1e' : 'white', borderColor: darkMode ? '#333' : '#ddd', height: '100%', minHeight: window.innerWidth < 1024 ? '400px' : 'calc(100vh - 200px)', position: 'relative'}}>
             {loading ? (
               <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: darkMode ? '#aaa' : '#666'}}>
                 ⧖ Loading price data...
@@ -219,18 +483,24 @@ const ChartPage = ({ darkMode, toggleDarkMode }) => {
                 ⚠ {error}
               </div>
             ) : data ? (
-              <Chart 
-                options={chartOptions} 
-                series={[{ data: data.chart_data }]} 
-                type="candlestick" 
-                height="100%" 
-              />
+              <div style={{width: '100%', height: '100%'}}>
+                <div style={{fontSize: '12px', color: darkMode ? '#aaa' : '#666', marginBottom: '8px', textAlign: 'center'}}>
+                  ⏳ Data aggregated to {timePeriodLabels[timePeriods.indexOf(timePeriod)]} intervals
+                </div>
+                <Chart 
+                  options={{...chartOptions, subtitle: { text: `Interval: ${timePeriodLabels[timePeriods.indexOf(timePeriod)]}` }}} 
+                  series={[{ data: data.chart_data.slice(0, Math.max(10, Math.floor(data.chart_data.length / (11 - timePeriods.indexOf(timePeriod))))) }]} 
+                  type="candlestick" 
+                  height="100%" 
+                  width="100%"
+                />
+              </div>
             ) : null}
           </div>
         </div>
 
         {/* Right Panel */}
-        <div style={{flex: 1, display: 'flex', flexDirection: 'column', gap: '20px'}}>
+        <div style={{flex: window.innerWidth < 1024 ? '1' : '1', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', maxHeight: window.innerWidth < 1024 ? 'auto' : 'calc(100vh - 200px)', minWidth: window.innerWidth < 1024 ? '0' : '320px'}}>
           
           {/* Signal Card */}
           {data && (
@@ -281,7 +551,7 @@ const ChartPage = ({ darkMode, toggleDarkMode }) => {
           <div style={{...styles.infoCard, background: darkMode ? '#1e1e2e' : '#f0f9ff', color: darkMode ? '#aaa' : '#0c4a6e', border: `1px solid ${darkMode ? '#333' : '#e0f2fe'}`}}>
             <p><strong>Last Updated:</strong> {data?.last_updated || 'N/A'}</p>
             <p><strong>Data Source:</strong> Real-time market data (Yahoo Finance)</p>
-            <p><strong>Refresh Rate:</strong> Hourly (to prevent rate limits)</p>
+            <p><strong>Model Type:</strong> LSTM Neural Network</p>
             <p style={{fontSize: '12px', marginTop: '10px'}}><em>⚠ For educational purposes. Not financial advice.</em></p>
           </div>
         </div>
@@ -487,7 +757,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<LandingPage darkMode={darkMode} toggleDarkMode={toggleDarkMode} />} />
+        <Route path="/" element={<DashboardPage darkMode={darkMode} toggleDarkMode={toggleDarkMode} />} />
         <Route path="/chart/:symbol" element={<ChartPage darkMode={darkMode} toggleDarkMode={toggleDarkMode} />} />
         <Route path="/portfolio" element={<PortfolioPage darkMode={darkMode} toggleDarkMode={toggleDarkMode} />} />
       </Routes>
@@ -497,6 +767,169 @@ function App() {
 
 // ================== STYLES ==================
 const styles = {
+  // Console Dashboard Styles
+  consoleContainer: {
+    height: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    padding: '20px',
+    fontFamily: '"Courier New", monospace',
+    overflow: 'hidden'
+  },
+  consoleHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px',
+    paddingBottom: '15px',
+    borderBottom: '2px solid',
+    borderImage: 'linear-gradient(90deg, #00ff88, #00ffff) 1',
+  },
+  themeBtnConsole: {
+    border: '2px solid #00ffff',
+    borderRadius: '8px',
+    padding: '8px 16px',
+    fontSize: '16px',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)'
+  },
+  consoleNav: {
+    display: 'flex',
+    gap: '15px',
+    marginBottom: '20px',
+    animation: 'slideInRight 0.5s ease'
+  },
+  navBtn: {
+    background: 'transparent',
+    border: '2px solid #00ffff',
+    color: '#00ffff',
+    padding: '10px 20px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontFamily: '"Courier New", monospace',
+    fontWeight: 'bold',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)',
+    ':hover': {
+      background: '#00ffff',
+      color: '#0a0e27'
+    }
+  },
+  filterBar: {
+    display: 'flex',
+    gap: '30px',
+    marginBottom: '20px',
+    padding: '15px',
+    background: 'rgba(0, 255, 255, 0.1)',
+    borderRadius: '8px',
+    border: '1px solid rgba(0, 255, 255, 0.3)',
+    animation: 'fadeIn 0.5s ease'
+  },
+  filterGroup: {
+    display: 'flex',
+    gap: '10px',
+    alignItems: 'center'
+  },
+  filterBtn: {
+    padding: '8px 16px',
+    borderRadius: '6px',
+    border: '1px solid',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+    fontFamily: '"Courier New", monospace',
+    transition: 'all 0.3s ease',
+    fontSize: '13px'
+  },
+  gainersLosersContainer: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+    gap: '15px',
+    marginBottom: '20px',
+    animation: 'fadeIn 0.5s ease 0.1s both'
+  },
+  gainersBox: {
+    padding: '15px',
+    borderRadius: '8px',
+    border: '2px solid #10b981',
+    boxShadow: '0 0 15px rgba(16, 185, 129, 0.3)'
+  },
+  losersBox: {
+    padding: '15px',
+    borderRadius: '8px',
+    border: '2px solid #ef4444',
+    boxShadow: '0 0 15px rgba(239, 68, 68, 0.3)'
+  },
+  suggestionsBox: {
+    padding: '15px',
+    borderRadius: '8px',
+    border: '2px solid #f59e0b',
+    boxShadow: '0 0 15px rgba(245, 158, 11, 0.3)'
+  },
+  sectionTitle: {
+    fontSize: '16px',
+    fontWeight: 'bold',
+    marginBottom: '12px',
+    paddingBottom: '10px',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.2)'
+  },
+  gainerCard: {
+    padding: '10px',
+    marginBottom: '8px',
+    borderRadius: '4px',
+    fontSize: '13px',
+    transition: 'all 0.3s ease'
+  },
+  loserCard: {
+    padding: '10px',
+    marginBottom: '8px',
+    borderRadius: '4px',
+    fontSize: '13px',
+    transition: 'all 0.3s ease'
+  },
+  suggestionCard: {
+    padding: '10px',
+    marginBottom: '8px',
+    borderRadius: '4px',
+    fontSize: '13px',
+    transition: 'all 0.3s ease'
+  },
+  tableContainer: {
+    flex: 1,
+    borderRadius: '8px',
+    border: '2px solid #00ffff',
+    padding: '15px',
+    boxShadow: '0 0 20px rgba(0, 255, 255, 0.2)',
+    animation: 'fadeIn 0.5s ease 0.2s both'
+  },
+  tableScroll: {
+    overflowX: 'auto',
+    height: '100%',
+    borderRadius: '6px'
+  },
+  dataTable: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontFamily: '"Courier New", monospace',
+    fontSize: '12px'
+  },
+  tableHeader: {
+    padding: '12px 8px',
+    textAlign: 'left',
+    fontWeight: 'bold',
+    color: '#00ffff',
+    whiteSpace: 'nowrap'
+  },
+  tableRow: {
+    transition: 'all 0.3s ease',
+    cursor: 'pointer'
+  },
+  tableCell: {
+    padding: '10px 8px',
+    textAlign: 'left'
+  },
+
   landingContainer: {
     height: '100vh', 
     display: 'flex', 
@@ -617,21 +1050,27 @@ const styles = {
     height: '100vh',
     display: 'flex',
     flexDirection: 'column',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    width: '100%'
   },
   chartHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '15px 20px',
-    flexShrink: 0
+    flexShrink: 0,
+    flexWrap: 'wrap',
+    gap: '10px'
   },
   chartBox: {
     border: '1px solid #ddd',
     borderRadius: '12px',
     padding: '10px',
-    height: '100%',
-    overflow: 'hidden'
+    width: '100%',
+    overflow: 'auto',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   signalCard: {
     border: '1px solid #ddd',
