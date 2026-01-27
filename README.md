@@ -4,7 +4,7 @@ AutoTrade is a web platform that provides live AI-powered trading signals using 
 
 ## App link: [AutoTrade](https://autotrade-1-yvaj.onrender.com/)
 
-## Demo video: [YouTube-link]()
+## Demo video: [YouTube-link](https://youtu.be/wAVOFlBGslM?si=swsc04tkzzyW647j)
 
 ## Features
 
@@ -42,7 +42,7 @@ cd backend
 pip install -r requirements.txt
 python main.py
 ```
-Backend runs on `https://b47bd3a9224e.ngrok-free.app`
+Backend runs on `http://localhost:8000`
 
 **2. Frontend Setup**
 ```bash
@@ -51,3 +51,5 @@ npm install
 npm start
 ```
 Frontend runs on `http://localhost:3000`
+
+### Screenshot
