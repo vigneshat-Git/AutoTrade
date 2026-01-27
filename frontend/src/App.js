@@ -62,7 +62,7 @@ const DashboardPage = ({ darkMode, toggleDarkMode }) => {
     <div style={{...styles.consoleContainer, background: darkMode ? '#0a0e27' : '#f0f4f9', overflow: 'hidden', display: 'flex', flexDirection: 'column'}}>
       <div style={styles.consoleHeader}>
         <div style={{fontSize: '24px', fontWeight: 'bold', color: darkMode ? '#00ff88' : '#667eea', textShadow: darkMode ? '0 0 10px #00ff88' : 'none'}}>
-          ⚡ AUTOTRADE 
+          AUTOTRADE 
         </div>
         <button onClick={toggleDarkMode} style={{...styles.themeBtnConsole, background: darkMode ? '#1a1a3e' : '#fff'}}>
           {darkMode ? '☀' : '☽'}
@@ -141,7 +141,7 @@ const DashboardPage = ({ darkMode, toggleDarkMode }) => {
         <div style={styles.gainersLosersContainer}>
           <div style={styles.gainersBox}>
             <div style={{...styles.sectionTitle, color: darkMode ? '#00ff88' : '#10b981', textShadow: darkMode ? '0 0 10px #00ff88' : 'none'}}>
-              🔥 TOP GAINERS
+              TOP GAINERS
             </div>
             {topGainers.map((stock, idx) => (
               <div key={idx} style={{...styles.gainerCard, borderLeft: `3px solid #10b981`}}>
@@ -155,7 +155,7 @@ const DashboardPage = ({ darkMode, toggleDarkMode }) => {
 
           <div style={styles.losersBox}>
             <div style={{...styles.sectionTitle, color: darkMode ? '#ff4444' : '#ef4444', textShadow: darkMode ? '0 0 10px #ff4444' : 'none'}}>
-              ❄️ TOP LOSERS
+              TOP LOSERS
             </div>
             {topLosers.map((stock, idx) => (
               <div key={idx} style={{...styles.loserCard, borderLeft: `3px solid #ef4444`}}>
@@ -169,7 +169,7 @@ const DashboardPage = ({ darkMode, toggleDarkMode }) => {
 
           <div style={styles.suggestionsBox}>
             <div style={{...styles.sectionTitle, color: darkMode ? '#ffff00' : '#f59e0b', textShadow: darkMode ? '0 0 10px #ffff00' : 'none'}}>
-              💡 BUY SUGGESTIONS
+              BUY SUGGESTIONS
             </div>
             {suggestions.map((stock, idx) => (
               <div key={idx} style={{...styles.suggestionCard, borderLeft: `3px solid #f59e0b`, cursor: 'pointer'}} onClick={() => navigate(`/chart/${stock.symbol}`)}>
@@ -185,7 +185,7 @@ const DashboardPage = ({ darkMode, toggleDarkMode }) => {
         {/* Data Table */}
         <div style={styles.tableContainer}>
           <div style={{...styles.sectionTitle, color: darkMode ? '#00ffff' : '#667eea', marginBottom: '15px', textShadow: darkMode ? '0 0 10px #00ffff' : 'none'}}>
-            📊 MARKET DATA [{filteredData.length} STOCKS]
+            MARKET DATA [{filteredData.length} STOCKS]
           </div>
           
           <div style={styles.tableScroll}>
