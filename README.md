@@ -4,9 +4,9 @@ AutoTrade is a web platform that provides live AI-powered trading signals using 
 
 ## App link: [AutoTrade](https://autotrade-1-yvaj.onrender.com/)
 
-## Demo video: [Drive-link]()
+## Demo video: [YouTube-link]()
 
-## ✨ Features
+## Features
 
 - **AI Price Predictions**: Uses LSTM neural networks to forecast stock prices
 - **Real-time Charts**: Interactive candlestick charts with ApexCharts
@@ -14,7 +14,7 @@ AutoTrade is a web platform that provides live AI-powered trading signals using 
 - **Live Data**: Fetches data from Yahoo Finance API
 - **Hourly Updates**: Automatic cache management to prevent rate limits
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 - React 19 with Hooks

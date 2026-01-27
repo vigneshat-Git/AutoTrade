@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import yfinance as yf
@@ -11,79 +10,46 @@ import random
 from datetime import datetime, timedelta
 import sys
 import io
-
-# Fix Windows console encoding for emoji support
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-# ================= SETTINGS =================
 LOOKBACK = 60
 CONFIDENCE_LIMIT = 90
 MIN_MOVE_PCT = 0.30
 
-# Cache duration
 DATA_CACHE = {}
 CACHE_DURATION_SECONDS = 3600
-
 app = FastAPI()
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow all for testing
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ================= HELPER FUNCTIONS =================
-
 def fetch_robust_data(symbol):
-    """
-    Fetches data using yfinance's internal handling (curl_cffi).
-    Automatically adds .NS if missing for Indian context.
-    """
-    # 1. Auto-append .NS for Indian stocks if missing
-    # (Yahoo Finance requires .NS for NSE stocks)
     if not symbol.endswith(".NS") and not symbol.endswith(".BO"):
         symbol = f"{symbol}.NS"
-
     print(f"[FETCH] Attempting to fetch: {symbol}")
 
     try:
-        # 2. Use Ticker directly WITHOUT a custom session
-        # The error explicitly said: "let YF handle"
         ticker = yf.Ticker(symbol)
-        
-        # Fetch 5 days of 1-minute data
         df = ticker.history(period="5d", interval="1m")
-
         if df is None or df.empty:
-            print(f"❌ {symbol}: No data found (DataFrame empty).")
+            print(f"{symbol}: No data found (DataFrame empty).")
             return None, symbol
-
-        # Reset index to make sure we have access to columns
         df.reset_index(inplace=True)
-        
-        # Standardize columns (Capitalize first letter)
         df.columns = [c.capitalize() for c in df.columns] 
-        
         required_cols = ['Open', 'High', 'Low', 'Close']
-        
-        # Check if we have the data we need
         if not all(col in df.columns for col in required_cols):
             print(f"[ERROR] {symbol}: Missing columns. Got: {df.columns}")
             return None, symbol
-
         return df, symbol
-
     except Exception as e:
         print(f"[ERROR] API CRASH ({symbol}): {str(e)}")
         return None, symbol
-    
-# ================= HELPER FUNCTIONS =================
-
 def generate_mock_data(symbol):
-    # (Same as your previous code - kept for fallback)
     dates = [datetime.now() - timedelta(minutes=i) for i in range(1000)]
     dates.reverse()
     ohlc_data = []
@@ -129,17 +95,15 @@ def build_model(shape):
     model.compile(optimizer="adam", loss="mse")
     return model
 
-# ================= API ENDPOINTS =================
-
 @app.get("/api/health")
 async def health_check():
     return {
-        "status": "✅ Backend is running",
+        "status": "Backend is running",
         "timestamp": datetime.now().isoformat(),
         "services": {
-            "yfinance": "✓ Ready",
-            "tensorflow": "✓ Ready",
-            "database_cache": f"✓ {len(DATA_CACHE)} stocks cached"
+            "yfinance": "Ready",
+            "tensorflow": "Ready",
+            "database_cache": f"{len(DATA_CACHE)} stocks cached"
         }
     }
 
@@ -153,7 +117,6 @@ async def get_prediction(symbol: str):
         data_source = "LIVE"
         error_reason = ""
         
-        # 1. CHECK CACHE
         now = datetime.now()
         cache_key = symbol if symbol.endswith(".NS") else f"{symbol}.NS"
 
@@ -164,11 +127,8 @@ async def get_prediction(symbol: str):
                 df = cached_df
                 data_source = "CACHE"
                 symbol = cache_key
-
-        # 2. FETCH REAL DATA (If not in cache)
         if df is None:
             fetched_df, correct_symbol = fetch_robust_data(symbol)
-            
             if fetched_df is not None:
                 df = fetched_df
                 symbol = correct_symbol
@@ -180,7 +140,6 @@ async def get_prediction(symbol: str):
                 data_source = "MOCK"
                 error_reason = "Download failed or empty data"
 
-        # --- PROCESS DATA ---
         if 'Datetime' in df.columns:
             df['Datetime'] = pd.to_datetime(df['Datetime'])
             if df['Datetime'].dt.tz is not None:
@@ -189,11 +148,9 @@ async def get_prediction(symbol: str):
         elif 'Date' in df.columns:
             df['Date'] = pd.to_datetime(df['Date'])
             df.set_index('Date', inplace=True)
-
         df = calculate_indicators(df)
         close_data = df[['Close']].values
         
-        # Validation
         if len(close_data) < LOOKBACK + 1:
             df = generate_mock_data(symbol)
             df = calculate_indicators(df)
@@ -201,11 +158,8 @@ async def get_prediction(symbol: str):
             data_source = "MOCK"
 
         X, y, scaler = prepare_data(close_data)
-        
-        # Quick training (1 epoch for speed)
         model = build_model((X.shape[1], 1))
         model.fit(X, y, epochs=1, batch_size=32, verbose=0) 
-
         last_sequence = close_data[-LOOKBACK:]
         last_scaled = scaler.transform(last_sequence)
         X_pred = np.reshape(last_scaled, (1, LOOKBACK, 1))
@@ -223,11 +177,8 @@ async def get_prediction(symbol: str):
             status_msg = "[HOT] FINAL SIGNAL: 90% CONFIRMED"
         else:
             status_msg = "[INFO] WAIT - No strong confirmation"
-
-        # Prepare Chart Data
         history_subset = df.tail(100).reset_index()
-        chart_data = []
-        
+        chart_data = []       
         for idx, row in history_subset.iterrows():
             try:
                 if 'Datetime' in history_subset.columns:
@@ -236,12 +187,10 @@ async def get_prediction(symbol: str):
                     ts_val = row['Date']
                 else:
                     ts_val = history_subset.index[idx]
-                
                 if isinstance(ts_val, pd.Timestamp):
                     ts_str = ts_val.strftime('%Y-%m-%d %H:%M:%S')
                 else:
                     ts_str = str(ts_val)
-
                 chart_data.append({
                     "x": ts_str,
                     "y": [float(row['Open']), float(row['High']), float(row['Low']), float(row['Close'])]
@@ -249,7 +198,6 @@ async def get_prediction(symbol: str):
             except Exception as e:
                 print(f"[WARN] Error processing row {idx}: {e}")
                 continue
-
         return {
             "symbol": symbol,
             "current_price": float(current_price),

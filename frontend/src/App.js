@@ -43,7 +43,7 @@ const getTopGainersLosers = (data, type, period) => {
   return filtered.slice(0, 5);
 };
 
-// ================== DASHBOARD PAGE ==================
+// DASHBOARD PAGE 
 const DashboardPage = ({ darkMode, toggleDarkMode }) => {
   const [marketData] = useState(generateMarketData(50));
   const [timePeriod, setTimePeriod] = useState('Day');
@@ -71,15 +71,15 @@ const DashboardPage = ({ darkMode, toggleDarkMode }) => {
 
       {/* Navigation */}
       <div style={styles.consoleNav}>
-        <button onClick={() => navigate('/chart/INFY')} style={styles.navBtn}>→ CHART VIEW</button>
-        <button onClick={() => navigate('/portfolio')} style={styles.navBtn}>→ PORTFOLIO</button>
+        <button onClick={() => navigate('/chart/INFY')} style={styles.navBtn}>CHART</button>
+        <button onClick={() => navigate('/portfolio')} style={styles.navBtn}>PORTFOLIO</button>
       </div>
 
       {/* Search Bar */}
       <div style={{padding: '15px', borderBottom: `1px solid ${darkMode ? '#2a2a4e' : '#ddd'}`, background: darkMode ? '#1a1a3e' : '#fff'}}>
         <input
           type="text"
-          placeholder="🔍 Search stocks..."
+          placeholder="Search stocks..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{
@@ -243,7 +243,7 @@ const DashboardPage = ({ darkMode, toggleDarkMode }) => {
   );
 };
 
-// ================== LANDING PAGE ==================
+// LANDING PAGE 
 const LandingPage = ({ darkMode, toggleDarkMode }) => {
   const [symbol, setSymbol] = useState('');
   const [watchlist, setWatchlist] = useState(() => {
@@ -278,10 +278,10 @@ const LandingPage = ({ darkMode, toggleDarkMode }) => {
       </button>
 
       <a href="#portfolio" onClick={(e) => { e.preventDefault(); navigate('/portfolio'); }} style={{position: 'absolute', top: '20px', left: '20px', color: '#fff', textDecoration: 'none', fontWeight: 'bold', fontSize: '14px', background: 'rgba(255,255,255,0.2)', padding: '8px 15px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.3)', cursor: 'pointer', transition: 'all 0.3s ease'}}>
-        ▦ Portfolio
+        Portfolio
       </a>
       
-      <div style={{...styles.logo, color: '#fff', fontSize: '48px', marginBottom: '10px'}}>⚡ AutoTrade</div>
+      <div style={{...styles.logo, color: '#fff', fontSize: '48px', marginBottom: '10px'}}>AutoTrade</div>
       <p style={{color: 'rgba(255,255,255,0.8)', fontSize: '18px', marginTop: '5px'}}>AI-Powered Stock Trading Signals</p>
       
       <div style={styles.centerContent}>
@@ -335,7 +335,7 @@ const LandingPage = ({ darkMode, toggleDarkMode }) => {
   );
 };
 
-// ================== CHART PAGE ==================
+// CHART PAGE 
 const ChartPage = ({ darkMode, toggleDarkMode }) => {
   const { symbol } = useParams();
   const [data, setData] = useState(null);
@@ -372,8 +372,6 @@ const ChartPage = ({ darkMode, toggleDarkMode }) => {
     const interval = setInterval(fetchData, 3600000); 
     return () => clearInterval(interval);
   }, [symbol]);
-
-  // Countdown timer
   useEffect(() => {
     const timer = setInterval(() => {
       setRefreshCountdown(prev => prev > 0 ? prev - 1 : 3600);
@@ -387,7 +385,6 @@ const ChartPage = ({ darkMode, toggleDarkMode }) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Chart Configuration
   const chartOptions = {
     chart: {
       type: 'candlestick',
@@ -560,7 +557,7 @@ const ChartPage = ({ darkMode, toggleDarkMode }) => {
   );
 };
 
-// ================== PORTFOLIO PAGE ==================
+// PORTFOLIO PAGE 
 const PortfolioPage = ({ darkMode, toggleDarkMode }) => {
   const [watchlist, setWatchlist] = useState(() => {
     const saved = localStorage.getItem('watchlist');
@@ -741,7 +738,7 @@ const PortfolioPage = ({ darkMode, toggleDarkMode }) => {
   );
 };
 
-// ================== MAIN APP ==================
+// MAIN APP 
 function App() {
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
@@ -765,9 +762,8 @@ function App() {
   );
 }
 
-// ================== STYLES ==================
+// STYLES 
 const styles = {
-  // Console Dashboard Styles
   consoleContainer: {
     height: '100vh',
     display: 'flex',
@@ -1044,8 +1040,7 @@ const styles = {
       transform: 'translateY(-5px)'
     }
   },
-  
-  // Chart Page Styles
+
   chartContainer: {
     height: '100vh',
     display: 'flex',
@@ -1153,7 +1148,6 @@ const styles = {
     whiteSpace: 'pre-wrap'
   },
 
-  // Portfolio Page Styles
   portfolioContainer: {
     height: '100vh',
     display: 'flex',
