@@ -1,6 +1,30 @@
 {
+  "name": "autotrade",
+  "version": "2.1.0",
+  "description": "AI-Powered Stock Trading Signals Platform",
+  "main": "index.js",
+  "scripts": {
+    "install-all": "npm install && cd frontend && npm install && cd ..",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && python main.py",
+    "start:frontend": "cd frontend && npm start",
+    "build": "cd frontend && npm run build",
+    "dev": "concurrently \"npm run start:backend\" \"npm run start:frontend\""
+  },
   "dependencies": {
     "axios": "^1.13.2",
     "recharts": "^3.6.0"
-  }
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "stock",
+    "trading",
+    "ai",
+    "predictions",
+    "lstm"
+  ],
+  "author": "AutoTrade",
+  "license": "MIT"
 }
