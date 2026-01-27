@@ -357,7 +357,7 @@ const ChartPage = ({ darkMode, toggleDarkMode }) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`https://autotrade-t5g6.onrender.com/api/predict/${symbol}`);
+        const response = await axios.get(`http://13.60.78.170:8000/api/predict/${symbol}`);
         setData(response.data);
         setError(null);
       } catch (err) {
@@ -578,7 +578,7 @@ const PortfolioPage = ({ darkMode, toggleDarkMode }) => {
         const data = [];
         for (const symbol of watchlist) {
           try {
-            const response = await axios.get(`https://autotrade-t5g6.onrender.com/api/predict/${symbol}`);
+            const response = await axios.get(`http://13.60.78.170:8000/api/predict/${symbol}`);
             data.push(response.data);
           } catch (err) {
             console.error(`Failed to fetch ${symbol}:`, err);
