@@ -357,7 +357,7 @@ const ChartPage = ({ darkMode, toggleDarkMode }) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`https://b47bd3a9224e.ngrok-free.app/api/predict/${symbol}`);
+        const response = await axios.get(`https://13275cdaf722.ngrok-free.app/api/predict/${symbol}`);
         setData(response.data);
         setError(null);
       } catch (err) {
@@ -575,7 +575,7 @@ const PortfolioPage = ({ darkMode, toggleDarkMode }) => {
         const data = [];
         for (const symbol of watchlist) {
           try {
-            const response = await axios.get(`https://b47bd3a9224e.ngrok-free.app/api/predict/${symbol}`);
+            const response = await axios.get(`https://13275cdaf722.ngrok-free.app/api/predict/${symbol}`);
             data.push(response.data);
           } catch (err) {
             console.error(`Failed to fetch ${symbol}:`, err);
