@@ -13,7 +13,7 @@ function AdScript() {
     script.src =
       "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2141048930824159";
     script.async = true;
-    script.crossOrigin = "anonymous";
+    script.crossorigin = "anonymous";
     document.head.appendChild(script);
   }, []);
 
