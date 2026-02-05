@@ -1,3 +1,10 @@
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
+import Chart from 'react-apexcharts';
+import './App.css';
+
+//Adsense 
 function AdScript() {
   useEffect(() => {
     if (document.querySelector('script[src*="adsbygoogle.js"]')) return;
@@ -12,13 +19,6 @@ function AdScript() {
 
   return null;
 }
-//Adsense 
-
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
-import Chart from 'react-apexcharts';
-import './App.css';
 
 // ================== MOCK DATA GENERATOR ==================
 const generateMarketData = (count = 50) => {
@@ -777,6 +777,7 @@ function App() {
         <Route path="/portfolio" element={<PortfolioPage darkMode={darkMode} toggleDarkMode={toggleDarkMode} />} />
       </Routes>
     </Router>
+  </>
   );
 }
 
