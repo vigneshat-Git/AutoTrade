@@ -5,7 +5,7 @@ import Chart from 'react-apexcharts';
 import './App.css';
 
 //AdSense 
-import { useEffect } from "react";
+//import { useEffect } from "react";
 
 function AdScript() {
   useEffect(() => {
