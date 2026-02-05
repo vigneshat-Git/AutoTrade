@@ -753,7 +753,6 @@ function App() {
 
   return (
         <>
-      <AdScript />   {/* LOAD ADSENSE ONCE */}
     <Router>
       <Routes>
         <Route path="/" element={<DashboardPage darkMode={darkMode} toggleDarkMode={toggleDarkMode} />} />
