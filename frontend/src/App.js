@@ -4,22 +4,6 @@ import axios from 'axios';
 import Chart from 'react-apexcharts';
 import './App.css';
 
-//Adsense 
-function AdScript() {
-  useEffect(() => {
-    if (document.querySelector('script[src*="adsbygoogle.js"]')) return;
-
-    const script = document.createElement("script");
-    script.src =
-      "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2141048930824159";
-    script.async = true;
-    script.crossorigin = "anonymous";
-    document.head.appendChild(script);
-  }, []);
-
-  return null;
-}
-
 // ================== MOCK DATA GENERATOR ==================
 const generateMarketData = (count = 50) => {
   const exchanges = ['NSE', 'BSE'];
