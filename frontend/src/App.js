@@ -1,14 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
-import Chart from 'react-apexcharts';
-import './App.css';
-
-//AdSense 
-//import { useEffect } from "react";
-
 function AdScript() {
   useEffect(() => {
+    if (document.querySelector('script[src*="adsbygoogle.js"]')) return;
+
     const script = document.createElement("script");
     script.src =
       "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2141048930824159";
@@ -19,8 +12,13 @@ function AdScript() {
 
   return null;
 }
+//Adsense 
 
-export default AdScript;
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
+import Chart from 'react-apexcharts';
+import './App.css';
 
 // ================== MOCK DATA GENERATOR ==================
 const generateMarketData = (count = 50) => {
@@ -770,6 +768,8 @@ function App() {
   };
 
   return (
+        <>
+      <AdScript />   {/* LOAD ADSENSE ONCE */}
     <Router>
       <Routes>
         <Route path="/" element={<DashboardPage darkMode={darkMode} toggleDarkMode={toggleDarkMode} />} />
